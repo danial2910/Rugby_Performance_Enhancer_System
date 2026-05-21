@@ -1,6 +1,8 @@
 package com.utm.rugbyplanner.controller;
 
 import com.utm.rugbyplanner.dto.ApiResponse;
+import com.utm.rugbyplanner.dto.PlanEditRequest;
+import com.utm.rugbyplanner.dto.PlanProgressRequest;
 import com.utm.rugbyplanner.dto.WorkoutPlanRequest;
 import com.utm.rugbyplanner.dto.WorkoutPlanResponse;
 import com.utm.rugbyplanner.service.WorkoutPlanService;
@@ -23,14 +25,17 @@ import java.util.List;
  *
  * All endpoints require a valid JWT Bearer token.
  *
- * ┌──────────────────────────────────────────────────────────────────────────┐
- * │  Method  │  URL                          │  Purpose                     │
- * ├──────────┼───────────────────────────────┼──────────────────────────────┤
- * │  POST    │  /api/workout/generate        │  UC004 Generate new plan     │
- * │  GET     │  /api/workout/plans           │  UC005 List all saved plans  │
- * │  GET     │  /api/workout/plans/{id}      │  UC005 Get a specific plan   │
- * │  DELETE  │  /api/workout/plans/{id}      │  UC005 Delete a plan         │
- * └──────────────────────────────────────────────────────────────────────────┘
+ * ┌──────────────────────────────────────────────────────────────────────────────┐
+ * │  Method  │  URL                               │  Purpose                    │
+ * ├──────────┼────────────────────────────────────┼─────────────────────────────┤
+ * │  POST    │  /api/workout/generate             │  UC004 Generate new plan    │
+ * │  GET     │  /api/workout/plans                │  UC005 List all saved plans │
+ * │  GET     │  /api/workout/plans/{id}           │  UC005 Get a specific plan  │
+ * │  PUT     │  /api/workout/plans/{id}           │  UC005 Edit plan content    │
+ * │  PUT     │  /api/workout/plans/{id}/activate  │  UC005 Set plan as active   │
+ * │  PATCH   │  /api/workout/plans/{id}/progress  │  UC005 Update progress      │
+ * │  DELETE  │  /api/workout/plans/{id}           │  UC005 Delete a plan        │
+ * └──────────────────────────────────────────────────────────────────────────────┘
  */
 @Slf4j
 @RestController
@@ -117,6 +122,63 @@ public class WorkoutPlanController {
                 workoutPlanService.getPlan(userDetails.getUsername(), id);
 
         return ResponseEntity.ok(ApiResponse.success("Plan loaded.", plan));
+    }
+
+    // ── UC005: Edit plan content ──────────────────────────────────────────────
+
+    /**
+     * PUT /api/workout/plans/{id}
+     *
+     * Allows the athlete to rename the plan and/or edit the generated markdown.
+     * 200 OK → updated WorkoutPlanResponse
+     */
+    @PutMapping("/plans/{id}")
+    public ResponseEntity<ApiResponse<WorkoutPlanResponse>> editPlan(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String id,
+            @Valid @RequestBody PlanEditRequest request) {
+
+        WorkoutPlanResponse plan =
+                workoutPlanService.editPlan(userDetails.getUsername(), id, request);
+        return ResponseEntity.ok(ApiResponse.success("Workout plan updated successfully.", plan));
+    }
+
+    // ── UC005: Activate plan ──────────────────────────────────────────────────
+
+    /**
+     * PUT /api/workout/plans/{id}/activate
+     *
+     * Sets the given plan as the user's currently active plan.
+     * All other plans for this user are deactivated.
+     * 200 OK → updated WorkoutPlanResponse
+     */
+    @PutMapping("/plans/{id}/activate")
+    public ResponseEntity<ApiResponse<WorkoutPlanResponse>> activatePlan(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String id) {
+
+        WorkoutPlanResponse plan =
+                workoutPlanService.activatePlan(userDetails.getUsername(), id);
+        return ResponseEntity.ok(ApiResponse.success("Plan set as currently active.", plan));
+    }
+
+    // ── UC005: Update progress ────────────────────────────────────────────────
+
+    /**
+     * PATCH /api/workout/plans/{id}/progress
+     *
+     * Replaces the completedItems list for a plan.
+     * 200 OK → updated WorkoutPlanResponse
+     */
+    @PatchMapping("/plans/{id}/progress")
+    public ResponseEntity<ApiResponse<WorkoutPlanResponse>> updateProgress(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String id,
+            @RequestBody PlanProgressRequest request) {
+
+        WorkoutPlanResponse plan =
+                workoutPlanService.updateProgress(userDetails.getUsername(), id, request);
+        return ResponseEntity.ok(ApiResponse.success("Progress updated.", plan));
     }
 
     // ── UC005: Delete plan ────────────────────────────────────────────────────

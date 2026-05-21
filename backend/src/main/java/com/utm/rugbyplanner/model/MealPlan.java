@@ -6,6 +6,8 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * MealPlan — MongoDB collection: "meal_plans"
@@ -50,9 +52,32 @@ public class MealPlan {
     private String  dietaryPreference; // "HALAL" | "VEGETARIAN" | "VEGAN" | "NO_RESTRICTION"
     private String  allergies;         // free text, nullable (e.g. "peanuts, dairy")
     private Integer mealsPerDay;       // 3 – 6
+    private String  activityLevel;     // "MODERATE" | "ACTIVE" | "EXTREME"
+    private Integer targetWeight;      // kg, nullable
+    private String  trainingPhase;     // "PRE_SEASON" | "IN_SEASON" | "OFF_SEASON" | "POST_SEASON"
+    private String  mealPrepTime;      // "LOW" | "MEDIUM" | "HIGH"
 
     /** Full AI-generated 7-day meal plan text (markdown from Ollama llama3.2) */
     private String generatedPlan;
+
+    // ── Trainer edit audit fields ─────────────────────────────────────────────
+    /** Note the trainer must provide when modifying this plan */
+    private String trainerNote;
+
+    /** Display name of the trainer who last edited this plan */
+    private String lastEditedBy;
+
+    // ── UC007 manage fields ───────────────────────────────────────────────────
+    /** True if the user has set this as their currently active meal plan */
+    @Builder.Default
+    private boolean isActive = false;
+
+    /**
+     * Keys of meals/days the user has checked off as completed.
+     * Stored as strings like "Day 1 – Breakfast", "Day 1 – Lunch", etc.
+     */
+    @Builder.Default
+    private List<String> completedItems = new ArrayList<>();
 
     @CreatedDate
     private LocalDateTime createdAt;

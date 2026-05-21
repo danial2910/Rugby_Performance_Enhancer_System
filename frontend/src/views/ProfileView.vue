@@ -120,6 +120,21 @@
             <input :value="profileStore.profile.username" type="text"
               class="form-input readonly-field" readonly />
           </div>
+
+          <div class="form-group">
+            <label class="form-label">Matrix Number <span class="optional">optional</span></label>
+            <input v-model="userForm.matrixNumber" type="text" class="form-input"
+              placeholder="e.g. A22EC0001" @input="clearUserError('matrixNumber')" />
+            <p v-if="userErrors.matrixNumber" class="field-error">{{ userErrors.matrixNumber }}</p>
+          </div>
+
+          <div class="form-group" :class="{ 'has-error': userErrors.icNumber }">
+            <label class="form-label">IC Number <span class="optional">optional</span></label>
+            <input v-model="userForm.icNumber" type="text" class="form-input"
+              placeholder="e.g. 020101-10-1234" @input="clearUserError('icNumber')" />
+            <p v-if="userErrors.icNumber" class="field-error">{{ userErrors.icNumber }}</p>
+            <p class="field-hint">Format: XXXXXX-XX-XXXX</p>
+          </div>
         </div>
 
         <div class="card-footer">
@@ -393,7 +408,7 @@ const initials = computed(() => {
 const DAYS = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY']
 
 // ── Form state ────────────────────────────────────────────────────────────────
-const userForm = reactive({ fullName: '', email: '', phoneNumber: '' })
+const userForm = reactive({ fullName: '', email: '', phoneNumber: '', matrixNumber: '', icNumber: '' })
 
 const athleteForm = reactive({
   weight: null, targetWeight: null, height: null, age: null,
@@ -519,9 +534,11 @@ function formatDate(iso) { if (!iso) return ''; try { return new Date(iso).toLoc
 // ── Populate forms ────────────────────────────────────────────────────────────
 function populateForms(p) {
   if (!p) return
-  userForm.fullName    = p.fullName    || ''
-  userForm.email       = p.email       || ''
-  userForm.phoneNumber = p.phoneNumber || ''
+  userForm.fullName     = p.fullName     || ''
+  userForm.email        = p.email        || ''
+  userForm.phoneNumber  = p.phoneNumber  || ''
+  userForm.matrixNumber = p.matrixNumber || ''
+  userForm.icNumber     = p.icNumber     || ''
 
   // Set avatar preview from existing profile picture
   avatarPreview.value = p.profilePicture || null

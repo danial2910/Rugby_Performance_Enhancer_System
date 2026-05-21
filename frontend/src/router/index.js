@@ -30,6 +30,7 @@ const WorkoutView     = () => import('@/views/WorkoutView.vue')
 const ChatbotView     = () => import('@/views/ChatbotView.vue')
 const AppointmentView = () => import('@/views/AppointmentView.vue')
 const ProfileView     = () => import('@/views/ProfileView.vue')
+const AdminView       = () => import('@/views/AdminView.vue')
 const NotFoundView    = () => import('@/views/NotFoundView.vue')
 
 // Layout wrappers
@@ -137,6 +138,16 @@ const routes = [
           requiresAuth: true,
           title: 'My Profile — Rugby AI Planner'
         }
+      },
+      {
+        path: 'admin',
+        name: 'Admin',
+        component: AdminView,
+        meta: {
+          requiresAuth: true,
+          role: 'ADMIN',
+          title: 'User Management — Rugby AI Planner'
+        }
       }
     ]
   },
@@ -173,18 +184,26 @@ router.beforeEach((to, from, next) => {
 
   // Already logged in → don't show login/register page
   if (!to.meta.requiresAuth && isLoggedIn && (to.name === 'Login' || to.name === 'Register')) {
-    const destination = userRole === 'TRAINER' ? '/trainer' : '/dashboard'
+    const destination = userRole === 'ADMIN' ? '/admin'
+                      : userRole === 'TRAINER' ? '/trainer'
+                      : '/dashboard'
     return next(destination)
+  }
+
+  // Role-based guard: ADMIN-only routes
+  if (to.meta.role === 'ADMIN' && userRole !== 'ADMIN') {
+    const fallback = userRole === 'TRAINER' ? '/trainer' : '/dashboard'
+    return next(fallback)
   }
 
   // Role-based guard: TRAINER-only routes
   if (to.meta.role === 'TRAINER' && userRole !== 'TRAINER') {
-    return next('/dashboard')
+    return next(userRole === 'ADMIN' ? '/admin' : '/dashboard')
   }
 
   // Role-based guard: ATHLETE-only routes
   if (to.meta.role === 'ATHLETE' && userRole !== 'ATHLETE') {
-    return next('/trainer')
+    return next(userRole === 'ADMIN' ? '/admin' : '/trainer')
   }
 
   next()

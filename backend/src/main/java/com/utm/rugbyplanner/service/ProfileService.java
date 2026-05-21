@@ -34,6 +34,8 @@ public class ProfileService {
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .phoneNumber(user.getPhoneNumber())
+                .matrixNumber(user.getMatrixNumber())
+                .icNumber(user.getIcNumber())
                 .profilePicture(user.getProfilePicture())
                 .userRole(user.getUserRole());
 
@@ -81,6 +83,8 @@ public class ProfileService {
         user.setFullName(req.getFullName());
         user.setEmail(req.getEmail());
         user.setPhoneNumber(req.getPhoneNumber());
+        user.setMatrixNumber(req.getMatrixNumber());
+        user.setIcNumber(req.getIcNumber());
 
         // Update profile picture — null means keep existing, empty string means remove
         if (req.getProfilePicture() != null) {

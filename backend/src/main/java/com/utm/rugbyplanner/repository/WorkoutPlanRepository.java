@@ -18,4 +18,7 @@ public interface WorkoutPlanRepository extends MongoRepository<WorkoutPlan, Stri
 
     /** Count plans for a user */
     long countByUserId(String userId);
+
+    /** Trainer: find any plan by id regardless of owner */
+    // inherited: Optional<WorkoutPlan> findById(String id);
 }

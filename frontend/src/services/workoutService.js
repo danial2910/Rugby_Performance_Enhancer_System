@@ -1,10 +1,13 @@
 /**
  * workoutService.js — API calls for UC004/UC005
  *
- * POST /api/workout/generate   → generate a new AI workout plan
- * GET  /api/workout/plans      → list saved plans
- * GET  /api/workout/plans/:id  → get a single plan
- * DELETE /api/workout/plans/:id → delete a plan
+ * POST   /api/workout/generate              → generate a new AI workout plan
+ * GET    /api/workout/plans                 → list saved plans
+ * GET    /api/workout/plans/:id             → get a single plan
+ * PUT    /api/workout/plans/:id             → edit plan name / content
+ * PUT    /api/workout/plans/:id/activate    → set plan as currently active
+ * PATCH  /api/workout/plans/:id/progress    → update completed checklist items
+ * DELETE /api/workout/plans/:id             → delete a plan
  */
 import http from './http'
 
@@ -22,6 +25,21 @@ const workoutService = {
 
   async getPlan(id) {
     const { data } = await http.get(`/workout/plans/${id}`)
+    return data
+  },
+
+  async editPlan(id, payload) {
+    const { data } = await http.put(`/workout/plans/${id}`, payload)
+    return data
+  },
+
+  async activatePlan(id) {
+    const { data } = await http.put(`/workout/plans/${id}/activate`)
+    return data
+  },
+
+  async updateProgress(id, completedItems) {
+    const { data } = await http.patch(`/workout/plans/${id}/progress`, { completedItems })
     return data
   },
 

@@ -36,6 +36,12 @@ public class User {
 
     private String phoneNumber;
 
+    /** UTM matrix number, e.g. "A22EC0001" */
+    private String matrixNumber;
+
+    /** Malaysian IC number, e.g. "020101-10-1234" */
+    private String icNumber;
+
     /** Base64 data URL of the user's profile picture */
     private String profilePicture;
 
@@ -52,6 +58,7 @@ public class User {
 
     public enum UserRole {
         ATHLETE,
-        TRAINER
+        TRAINER,
+        ADMIN
     }
 }

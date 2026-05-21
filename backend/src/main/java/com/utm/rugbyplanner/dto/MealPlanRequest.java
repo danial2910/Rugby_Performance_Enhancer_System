@@ -48,4 +48,21 @@ public class MealPlanRequest {
     @Min(value = 3, message = "Minimum 3 meals per day.")
     @Max(value = 6, message = "Maximum 6 meals per day.")
     private Integer mealsPerDay;
+
+    /** MODERATE | ACTIVE | EXTREME — used to calculate accurate TDEE */
+    @NotBlank(message = "Activity level is required.")
+    private String activityLevel;
+
+    /** Target body weight in kg — helps AI calibrate surplus/deficit */
+    @Min(value = 40, message = "Target weight must be at least 40 kg.")
+    @Max(value = 200, message = "Target weight must be at most 200 kg.")
+    private Integer targetWeight;
+
+    /** PRE_SEASON | IN_SEASON | OFF_SEASON | POST_SEASON */
+    @NotBlank(message = "Training phase is required.")
+    private String trainingPhase;
+
+    /** LOW | MEDIUM | HIGH — how much time athlete has to prepare meals */
+    @NotBlank(message = "Meal prep time is required.")
+    private String mealPrepTime;
 }

@@ -6,6 +6,8 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * WorkoutPlan — MongoDB collection: "workout_plans"
@@ -24,6 +26,10 @@ import java.time.LocalDateTime;
  *   - weight, height, age → physical stats for volume/intensity tuning
  *   - injuryNotes      → AI avoids exercises that aggravate existing injuries
  *   - sessionsPerWeek  → number of training days (3–6)
+ *
+ * UC005 manage fields:
+ *   - isActive         → true if user designated this as their current plan
+ *   - completedItems   → list of day/session keys user has checked off
  */
 @Data
 @Builder
@@ -48,11 +54,33 @@ public class WorkoutPlan {
     private Integer weight;          // kg
     private Integer height;          // cm
     private Integer age;             // years
-    private String  injuryNotes;     // free text, nullable
-    private Integer sessionsPerWeek; // 3 – 6
+    private String  injuryNotes;       // free text, nullable
+    private Integer sessionsPerWeek;   // 2 – 7
+    private String  trainingPhase;     // "PRE_SEASON" | "IN_SEASON" | "OFF_SEASON" | "POST_SEASON"
+    private String  availableEquipment;// "GYM" | "HOME" | "FIELD" | "MINIMAL"
+    private String  focusArea;         // optional free text
 
     /** Full AI-generated plan text (markdown from Ollama llama3.2) */
     private String generatedPlan;
+
+    // ── Trainer edit audit fields ─────────────────────────────────────────────
+    /** Note the trainer must provide when modifying this plan */
+    private String trainerNote;
+
+    /** Display name of the trainer who last edited this plan */
+    private String lastEditedBy;
+
+    // ── UC005 manage fields ───────────────────────────────────────────────────
+    /** True if the user has set this as their currently active plan */
+    @Builder.Default
+    private boolean isActive = false;
+
+    /**
+     * Keys of sessions/days the user has checked off as completed.
+     * Stored as strings like "Day 1", "Day 2", etc.
+     */
+    @Builder.Default
+    private List<String> completedItems = new ArrayList<>();
 
     @CreatedDate
     private LocalDateTime createdAt;

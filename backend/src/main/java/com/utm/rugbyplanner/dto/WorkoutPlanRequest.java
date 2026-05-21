@@ -48,4 +48,15 @@ public class WorkoutPlanRequest {
     @Min(value = 2, message = "Minimum 2 sessions per week.")
     @Max(value = 7, message = "Maximum 7 sessions per week.")
     private Integer sessionsPerWeek;
+
+    /** PRE_SEASON | IN_SEASON | OFF_SEASON | POST_SEASON */
+    @NotBlank(message = "Training phase is required.")
+    private String trainingPhase;
+
+    /** GYM | HOME | FIELD | MINIMAL */
+    @NotBlank(message = "Available equipment is required.")
+    private String availableEquipment;
+
+    /** Optional free-text focus area e.g. "Improve scrummaging power and sprint speed" */
+    private String focusArea;
 }

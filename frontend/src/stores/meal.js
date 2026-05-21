@@ -53,11 +53,73 @@ export const useMealStore = defineStore('meal', () => {
     error.value        = null
     try {
       const response = await mealService.getPlans()
-      if (response.success) plans.value = response.data
+      if (response.success) {
+        plans.value = response.data
+        // Sync activePlan reference to the active plan in the list (if any)
+        const active = response.data.find(p => p.isActive)
+        if (active) activePlan.value = active
+      }
     } catch {
       error.value = 'Failed to load saved meal plans.'
     } finally {
       loadingPlans.value = false
+    }
+  }
+
+  /** UC007: Edit plan name and/or content */
+  async function editPlan(id, payload) {
+    error.value = null
+    try {
+      const response = await mealService.editPlan(id, payload)
+      if (response.success) {
+        const idx = plans.value.findIndex(p => p.id === id)
+        if (idx !== -1) plans.value[idx] = response.data
+        if (activePlan.value?.id === id) activePlan.value = response.data
+        return response.data
+      }
+      error.value = response.message || 'Failed to update meal plan.'
+      return null
+    } catch {
+      error.value = 'Failed to update meal plan. Please try again.'
+      return null
+    }
+  }
+
+  /** UC007: Set a plan as currently active (deactivates all others) */
+  async function activatePlan(id) {
+    error.value = null
+    try {
+      const response = await mealService.activatePlan(id)
+      if (response.success) {
+        // Mark all plans inactive, then mark the activated one active
+        plans.value = plans.value.map(p => ({ ...p, isActive: p.id === id }))
+        activePlan.value = response.data
+        return response.data
+      }
+      error.value = response.message || 'Failed to activate plan.'
+      return null
+    } catch {
+      error.value = 'Failed to activate plan. Please try again.'
+      return null
+    }
+  }
+
+  /** UC007: Update completed meal checklist items */
+  async function updateProgress(id, completedItems) {
+    error.value = null
+    try {
+      const response = await mealService.updateProgress(id, completedItems)
+      if (response.success) {
+        const idx = plans.value.findIndex(p => p.id === id)
+        if (idx !== -1) plans.value[idx] = response.data
+        if (activePlan.value?.id === id) activePlan.value = response.data
+        return response.data
+      }
+      error.value = response.message || 'Failed to update progress.'
+      return null
+    } catch {
+      error.value = 'Failed to save progress. Please try again.'
+      return null
     }
   }
 
@@ -80,6 +142,7 @@ export const useMealStore = defineStore('meal', () => {
 
   return {
     plans, activePlan, generating, loadingPlans, error, generateSuccess,
-    generatePlan, fetchPlans, deletePlan, setActivePlan, clearError
+    generatePlan, fetchPlans, editPlan, activatePlan, updateProgress,
+    deletePlan, setActivePlan, clearError
   }
 })

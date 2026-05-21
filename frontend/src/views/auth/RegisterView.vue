@@ -232,8 +232,15 @@ function validateStep2() {
 }
 
 function nextStep() {
-  if (currentStep.value === 1 && validateStep1()) currentStep.value = 2
-  else if (currentStep.value === 2 && validateStep2()) currentStep.value = 3
+  if (currentStep.value === 1 && validateStep1()) {
+    // Auto-fill username from email prefix if still blank
+    if (!form.username && form.email.includes('@')) {
+      const prefix = form.email.split('@')[0]
+      // Sanitise: keep only letters, numbers, underscores
+      form.username = prefix.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 50)
+    }
+    currentStep.value = 2
+  } else if (currentStep.value === 2 && validateStep2()) currentStep.value = 3
 }
 
 async function handleRegister() {

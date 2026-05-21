@@ -44,22 +44,20 @@
               <select v-model="form.rugbyPosition" class="form-select" @change="clearError('rugbyPosition')">
                 <option value="" disabled>Select your position</option>
                 <optgroup label="Forwards">
-                  <option>Loosehead Prop</option>
+                  <option>Prop (Loosehead)</option>
+                  <option>Prop (Tighthead)</option>
                   <option>Hooker</option>
-                  <option>Tighthead Prop</option>
-                  <option>Lock (Left)</option>
-                  <option>Lock (Right)</option>
-                  <option>Blindside Flanker</option>
-                  <option>Openside Flanker</option>
+                  <option>Lock</option>
+                  <option>Flanker (Openside)</option>
+                  <option>Flanker (Blindside)</option>
                   <option>Number 8</option>
                 </optgroup>
                 <optgroup label="Backs">
-                  <option>Scrumhalf</option>
-                  <option>Flyhalf</option>
+                  <option>Scrum Half</option>
+                  <option>Fly Half</option>
                   <option>Inside Centre</option>
                   <option>Outside Centre</option>
-                  <option>Left Wing</option>
-                  <option>Right Wing</option>
+                  <option>Wing</option>
                   <option>Fullback</option>
                 </optgroup>
               </select>
@@ -128,6 +126,54 @@
               <p v-if="errors.mealsPerDay" class="field-error">{{ errors.mealsPerDay }}</p>
             </div>
 
+            <!-- Activity Level -->
+            <div class="form-group" :class="{ 'has-error': errors.activityLevel }">
+              <label class="form-label">Activity Level <span class="req">*</span></label>
+              <div class="goal-selector">
+                <button v-for="a in activityLevels" :key="a.value" type="button"
+                  class="goal-btn" :class="{ active: form.activityLevel === a.value }"
+                  @click="form.activityLevel = a.value; clearError('activityLevel')">
+                  <span class="goal-icon">{{ a.icon }}</span>
+                  <span class="goal-label">{{ a.label }}</span>
+                </button>
+              </div>
+              <p v-if="errors.activityLevel" class="field-error">{{ errors.activityLevel }}</p>
+            </div>
+
+            <!-- Training Phase + Meal Prep Time -->
+            <div class="form-row">
+              <div class="form-group" :class="{ 'has-error': errors.trainingPhase }">
+                <label class="form-label">Training Phase <span class="req">*</span></label>
+                <select v-model="form.trainingPhase" class="form-select" @change="clearError('trainingPhase')">
+                  <option value="" disabled>Select phase</option>
+                  <option value="PRE_SEASON">🔥 Pre-Season</option>
+                  <option value="IN_SEASON">🏉 In-Season</option>
+                  <option value="OFF_SEASON">💪 Off-Season</option>
+                  <option value="POST_SEASON">🛌 Post-Season</option>
+                </select>
+                <p v-if="errors.trainingPhase" class="field-error">{{ errors.trainingPhase }}</p>
+              </div>
+
+              <div class="form-group" :class="{ 'has-error': errors.mealPrepTime }">
+                <label class="form-label">Meal Prep Time <span class="req">*</span></label>
+                <select v-model="form.mealPrepTime" class="form-select" @change="clearError('mealPrepTime')">
+                  <option value="" disabled>Select prep time</option>
+                  <option value="LOW">⚡ Quick (under 15 min)</option>
+                  <option value="MEDIUM">🍳 Standard (15–30 min)</option>
+                  <option value="HIGH">👨‍🍳 Full Cook (30+ min)</option>
+                </select>
+                <p v-if="errors.mealPrepTime" class="field-error">{{ errors.mealPrepTime }}</p>
+              </div>
+            </div>
+
+            <!-- Target Weight -->
+            <div class="form-group">
+              <label class="form-label">Target Weight (kg) <span class="optional-tag">optional</span></label>
+              <input v-model.number="form.targetWeight" type="number" class="form-input"
+                placeholder="e.g. 95" min="40" max="200" />
+              <p class="field-hint">Helps AI calibrate your calorie surplus or deficit.</p>
+            </div>
+
             <!-- Allergies -->
             <div class="form-group">
               <label class="form-label">Food Allergies / Intolerances <span class="optional-tag">optional</span></label>
@@ -177,15 +223,31 @@
 
           <div v-else class="plans-list">
             <div v-for="plan in paginatedPlans" :key="plan.id"
-              class="plan-item" :class="{ active: mealStore.activePlan?.id === plan.id }"
-              @click="mealStore.setActivePlan(plan)">
+              class="plan-item"
+              :class="{ 'is-selected': mealStore.activePlan?.id === plan.id, 'is-current': plan.isActive }"
+              @click="selectPlan(plan)">
+
+              <!-- Active badge -->
+              <div class="plan-item-badge" v-if="plan.isActive">✅</div>
+
               <div class="plan-item-info">
-                <p class="plan-item-name">{{ plan.planName }}</p>
+                <div class="plan-item-name-row">
+                  <p class="plan-item-name">{{ plan.planName }}</p>
+                  <span v-if="plan.isActive" class="badge-active">ACTIVE</span>
+                </div>
                 <p class="plan-item-meta">
                   {{ plan.rugbyPosition }} · {{ goalLabel(plan.goal) }} · {{ dietLabel(plan.dietaryPreference) }}
                 </p>
+                <!-- Progress bar -->
+                <div class="plan-item-progress" v-if="plan.completedItems && plan.completedItems.length > 0">
+                  <div class="progress-bar-track">
+                    <div class="progress-bar-fill" :style="{ width: progressPercent(plan) + '%' }"></div>
+                  </div>
+                  <span class="progress-label">{{ plan.completedItems.length }} meals logged</span>
+                </div>
                 <p class="plan-item-date">{{ formatDate(plan.createdAt) }}</p>
               </div>
+
               <button class="delete-btn" @click.stop="confirmDelete(plan)" title="Delete plan">🗑️</button>
             </div>
 
@@ -200,7 +262,7 @@
       </div>
 
       <!-- ══════════════════════════════════════════
-           RIGHT: Plan Display
+           RIGHT: Plan Display + Manage
            ══════════════════════════════════════════ -->
       <div class="plan-column">
 
@@ -228,26 +290,157 @@
 
         <!-- Plan content -->
         <div v-if="mealStore.activePlan && !mealStore.generating" class="plan-display card">
+
+          <!-- Plan header -->
           <div class="plan-display-header">
-            <div>
-              <h2 class="plan-display-title">{{ mealStore.activePlan.planName }}</h2>
-              <div class="plan-tags">
+            <div class="plan-header-left">
+              <!-- Edit mode: editable title -->
+              <input
+                v-if="editMode"
+                v-model="editForm.planName"
+                class="form-input plan-name-input"
+                placeholder="Plan name"
+              />
+              <h2 v-else class="plan-display-title">
+                {{ mealStore.activePlan.planName }}
+                <span v-if="mealStore.activePlan.isActive" class="title-active-badge">ACTIVE</span>
+              </h2>
+
+              <div class="plan-tags" v-if="!editMode">
                 <span class="tag tag-position">🏉 {{ mealStore.activePlan.rugbyPosition }}</span>
                 <span class="tag tag-goal">{{ goalLabel(mealStore.activePlan.goal) }}</span>
                 <span class="tag tag-diet">{{ dietLabel(mealStore.activePlan.dietaryPreference) }}</span>
                 <span class="tag tag-meals">{{ mealStore.activePlan.mealsPerDay }} meals/day</span>
+                <span class="tag tag-phase">{{ phaseLabel(mealStore.activePlan.trainingPhase) }}</span>
               </div>
-              <p class="plan-stats-line">
+              <p class="plan-stats-line" v-if="!editMode">
                 {{ mealStore.activePlan.weight }}kg ·
                 {{ mealStore.activePlan.height }}cm ·
                 {{ mealStore.activePlan.age }}yo
-                <span v-if="mealStore.activePlan.allergies"> · ⚠️ Allergies: {{ mealStore.activePlan.allergies }}</span>
+                <span v-if="mealStore.activePlan.allergies"> · ⚠️ {{ mealStore.activePlan.allergies }}</span>
               </p>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="plan-header-actions">
+              <button
+                v-if="!editMode && !mealStore.activePlan.isActive"
+                class="btn btn-activate"
+                :disabled="activating"
+                @click="handleActivate">
+                <span v-if="activating" class="spinner spinner-sm"></span>
+                <span v-else>📌 Set Active</span>
+              </button>
+              <span v-if="!editMode && mealStore.activePlan.isActive" class="active-indicator">
+                📌 Currently Active
+              </span>
+
+              <button v-if="!editMode" class="btn btn-ghost" @click="startEdit">✏️ Edit</button>
+              <button v-if="editMode" class="btn btn-save" :disabled="saving" @click="handleSaveEdit">
+                <span v-if="saving" class="spinner spinner-sm"></span>
+                <span v-else>💾 Save</span>
+              </button>
+              <button v-if="editMode" class="btn btn-ghost" @click="cancelEdit">Cancel</button>
             </div>
           </div>
 
-          <div class="plan-body">
+          <!-- ── Tabs: Plan / Progress ───────────────────────── -->
+          <div class="plan-tabs" v-if="!editMode">
+            <button class="plan-tab" :class="{ active: activeTab === 'plan' }" @click="activeTab = 'plan'">
+              📄 Plan
+            </button>
+            <button class="plan-tab" :class="{ active: activeTab === 'progress' }" @click="activeTab = 'progress'">
+              ✅ Progress
+              <span class="tab-badge" v-if="mealStore.activePlan.completedItems?.length">
+                {{ mealStore.activePlan.completedItems.length }}
+              </span>
+            </button>
+          </div>
+
+          <!-- ── Plan Tab ───────────────────────────────────────── -->
+          <div v-if="!editMode && activeTab === 'plan'" class="plan-body">
             <div class="plan-markdown" v-html="renderMarkdown(mealStore.activePlan.generatedPlan)"></div>
+          </div>
+
+          <!-- ── Edit Tab ───────────────────────────────────────── -->
+          <div v-if="editMode" class="plan-body edit-body">
+            <label class="form-label" style="margin-bottom:6px;display:block;">Plan Content (Markdown)</label>
+            <textarea
+              v-model="editForm.generatedPlan"
+              class="plan-editor"
+              spellcheck="false"
+              placeholder="Edit your meal plan here..."></textarea>
+            <p class="field-hint" style="margin-top:6px;">
+              You can edit or customise any part of the AI-generated meal plan. Uses markdown format.
+            </p>
+          </div>
+
+          <!-- ── Progress Tab ───────────────────────────────────── -->
+          <div v-if="!editMode && activeTab === 'progress'" class="plan-body progress-body">
+
+            <!-- Summary ring -->
+            <div class="progress-summary">
+              <div class="progress-ring-wrap">
+                <svg class="progress-ring" viewBox="0 0 60 60">
+                  <circle cx="30" cy="30" r="24" fill="none" stroke="var(--color-border)" stroke-width="6"/>
+                  <circle cx="30" cy="30" r="24" fill="none"
+                    stroke="var(--color-green)" stroke-width="6"
+                    stroke-linecap="round"
+                    :stroke-dasharray="150.8"
+                    :stroke-dashoffset="150.8 - (150.8 * progressPercent(mealStore.activePlan) / 100)"
+                    transform="rotate(-90 30 30)"
+                    style="transition:stroke-dashoffset 0.4s ease"/>
+                </svg>
+                <span class="progress-ring-label">{{ progressPercent(mealStore.activePlan) }}%</span>
+              </div>
+              <div class="progress-summary-text">
+                <p class="progress-summary-title">Weekly Nutrition Progress</p>
+                <p class="progress-summary-sub">
+                  {{ mealStore.activePlan.completedItems?.length || 0 }} of
+                  {{ extractMealKeys(mealStore.activePlan.generatedPlan).length }} meals logged
+                </p>
+                <button
+                  class="btn btn-ghost btn-sm reset-btn"
+                  v-if="mealStore.activePlan.completedItems?.length"
+                  @click="handleResetProgress">
+                  🔄 Reset Progress
+                </button>
+              </div>
+            </div>
+
+            <!-- Meal checklist grouped by day -->
+            <div class="checklist-grouped">
+              <div
+                v-for="day in groupedMealKeys(mealStore.activePlan.generatedPlan)"
+                :key="day.label"
+                class="checklist-day">
+
+                <div class="checklist-day-header">
+                  <span class="checklist-day-title">{{ day.label }}</span>
+                  <span class="checklist-day-count">
+                    {{ day.meals.filter(m => isCompleted(m)).length }}/{{ day.meals.length }}
+                  </span>
+                </div>
+
+                <div
+                  v-for="meal in day.meals"
+                  :key="meal"
+                  class="checklist-item"
+                  :class="{ completed: isCompleted(meal) }"
+                  @click="toggleItem(meal)">
+                  <div class="checklist-check">
+                    <span v-if="isCompleted(meal)">✓</span>
+                  </div>
+                  <span class="checklist-label">{{ mealNameOnly(meal) }}</span>
+                </div>
+              </div>
+
+              <p v-if="extractMealKeys(mealStore.activePlan.generatedPlan).length === 0"
+                class="checklist-empty">
+                No meal headings found in this plan. Try regenerating.
+              </p>
+            </div>
+
           </div>
         </div>
       </div>
@@ -270,9 +463,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useMealStore } from '@/stores/meal'
+import { useMealStore }    from '@/stores/meal'
+import { useProfileStore } from '@/stores/profile'
 
-const mealStore = useMealStore()
+const mealStore    = useMealStore()
+const profileStore = useProfileStore()
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const goals = [
@@ -289,6 +484,12 @@ const diets = [
   { value: 'NO_RESTRICTION', icon: '🍽️', label: 'No Restriction' }
 ]
 
+const activityLevels = [
+  { value: 'MODERATE', icon: '🚶', label: 'Moderate' },
+  { value: 'ACTIVE',   icon: '🏃', label: 'Active'   },
+  { value: 'EXTREME',  icon: '⚡', label: 'Extreme'  }
+]
+
 // ── Form state ───────────────────────────────────────────────────────────────
 const form = ref({
   planName:          '',
@@ -299,11 +500,134 @@ const form = ref({
   age:               null,
   dietaryPreference: '',
   allergies:         '',
-  mealsPerDay:       4
+  mealsPerDay:       4,
+  activityLevel:     '',
+  targetWeight:      null,
+  trainingPhase:     '',
+  mealPrepTime:      ''
 })
 
 const errors       = ref({})
 const deleteTarget = ref(null)
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+const activeTab = ref('plan')
+
+// ── Edit mode ────────────────────────────────────────────────────────────────
+const editMode   = ref(false)
+const saving     = ref(false)
+const activating = ref(false)
+const editForm   = ref({ planName: '', generatedPlan: '' })
+
+function startEdit() {
+  editForm.value.planName      = mealStore.activePlan.planName
+  editForm.value.generatedPlan = mealStore.activePlan.generatedPlan
+  editMode.value = true
+}
+
+function cancelEdit() { editMode.value = false }
+
+async function handleSaveEdit() {
+  if (!editForm.value.planName.trim() || !editForm.value.generatedPlan.trim()) return
+  saving.value = true
+  await mealStore.editPlan(mealStore.activePlan.id, {
+    planName:      editForm.value.planName.trim(),
+    generatedPlan: editForm.value.generatedPlan.trim()
+  })
+  saving.value   = false
+  editMode.value = false
+}
+
+// ── Activate plan ────────────────────────────────────────────────────────────
+async function handleActivate() {
+  activating.value = true
+  await mealStore.activatePlan(mealStore.activePlan.id)
+  activating.value = false
+}
+
+// ── Progress / checklist ─────────────────────────────────────────────────────
+
+/**
+ * Extract individual meal keys from the plan markdown.
+ * Meal plan headings pattern:
+ *   ## Day 1 (Monday)
+ *   ### Breakfast
+ * → key: "Day 1 – Breakfast"
+ */
+function extractMealKeys(text) {
+  if (!text) return []
+  const lines = text.split('\n')
+  const keys  = []
+  let currentDay = ''
+
+  for (const line of lines) {
+    const dayMatch  = line.match(/^##\s+(Day\s+\d+[^\n]*)/i)
+    const mealMatch = line.match(/^###\s+(.+)/)
+    if (dayMatch) {
+      currentDay = dayMatch[1].replace(/\*\*/g, '').trim()
+    } else if (mealMatch && currentDay) {
+      const mealName = mealMatch[1].replace(/\*\*/g, '').trim()
+      // Skip summary/table sections
+      if (!mealName.toLowerCase().includes('summary') && !mealName.toLowerCase().includes('table')) {
+        const key = `${currentDay} – ${mealName}`
+        if (!keys.includes(key)) keys.push(key)
+      }
+    }
+  }
+  return keys
+}
+
+/**
+ * Group meal keys by their day heading for grouped display.
+ */
+function groupedMealKeys(text) {
+  const keys = extractMealKeys(text)
+  const map  = new Map()
+  for (const key of keys) {
+    const [day, ...rest] = key.split(' – ')
+    if (!map.has(day)) map.set(day, [])
+    map.get(day).push(key)
+  }
+  return Array.from(map.entries()).map(([label, meals]) => ({ label, meals }))
+}
+
+/** Strip the day prefix — show only the meal name in checklist row */
+function mealNameOnly(key) {
+  return key.includes(' – ') ? key.split(' – ').slice(1).join(' – ') : key
+}
+
+function isCompleted(key) {
+  return mealStore.activePlan?.completedItems?.includes(key) ?? false
+}
+
+async function toggleItem(key) {
+  const plan = mealStore.activePlan
+  if (!plan) return
+  const current = plan.completedItems ? [...plan.completedItems] : []
+  const updated  = current.includes(key)
+    ? current.filter(k => k !== key)
+    : [...current, key]
+  await mealStore.updateProgress(plan.id, updated)
+}
+
+async function handleResetProgress() {
+  if (!mealStore.activePlan) return
+  await mealStore.updateProgress(mealStore.activePlan.id, [])
+}
+
+function progressPercent(plan) {
+  const total = extractMealKeys(plan?.generatedPlan).length
+  const done  = plan?.completedItems?.length || 0
+  if (!total) return 0
+  return Math.round((done / total) * 100)
+}
+
+// ── Select plan from list ────────────────────────────────────────────────────
+function selectPlan(plan) {
+  mealStore.setActivePlan(plan)
+  activeTab.value = 'plan'
+  editMode.value  = false
+}
 
 // ── Pagination ───────────────────────────────────────────────────────────────
 const PAGE_SIZE   = 5
@@ -322,8 +646,30 @@ function prevPage() { if (currentPage.value > 1) currentPage.value-- }
 function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++ }
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────
-onMounted(() => {
+onMounted(async () => {
   mealStore.fetchPlans()
+
+  if (!profileStore.profile) {
+    await profileStore.fetchProfile()
+  }
+  const p = profileStore.profile
+  if (!p) return
+
+  if (p.rugbyPosition)  form.value.rugbyPosition  = p.rugbyPosition
+  if (p.weight)         form.value.weight         = p.weight
+  if (p.height)         form.value.height         = p.height
+  if (p.age)            form.value.age            = p.age
+  if (p.targetWeight)   form.value.targetWeight   = p.targetWeight
+  if (p.activityLevel)  form.value.activityLevel  = p.activityLevel
+
+  if (p.dietaryRestrictions) {
+    const d = p.dietaryRestrictions.toLowerCase()
+    if (d.includes('vegan'))           form.value.dietaryPreference = 'VEGAN'
+    else if (d.includes('vegetarian')) form.value.dietaryPreference = 'VEGETARIAN'
+    else if (d.includes('halal'))      form.value.dietaryPreference = 'HALAL'
+    else                               form.value.dietaryPreference = 'NO_RESTRICTION'
+    if (!form.value.allergies) form.value.allergies = p.dietaryRestrictions
+  }
 })
 
 // ── Calorie estimate preview ─────────────────────────────────────────────────
@@ -346,6 +692,9 @@ function validate() {
   if (!form.value.age)               errors.value.age               = 'Age is required.'
   if (!form.value.dietaryPreference) errors.value.dietaryPreference = 'Please select a dietary preference.'
   if (!form.value.mealsPerDay)       errors.value.mealsPerDay       = 'Please select meals per day.'
+  if (!form.value.activityLevel)     errors.value.activityLevel     = 'Please select your activity level.'
+  if (!form.value.trainingPhase)     errors.value.trainingPhase     = 'Please select a training phase.'
+  if (!form.value.mealPrepTime)      errors.value.mealPrepTime      = 'Please select meal prep time.'
   return Object.keys(errors.value).length === 0
 }
 
@@ -358,8 +707,10 @@ function clearError(field) {
 async function handleGenerate() {
   if (!validate()) return
   mealStore.clearError()
+  activeTab.value  = 'plan'
+  editMode.value   = false
   await mealStore.generatePlan({ ...form.value })
-  currentPage.value = 1   // new plan lands at top — reset to page 1
+  currentPage.value = 1
 }
 
 // ── Delete ───────────────────────────────────────────────────────────────────
@@ -380,6 +731,11 @@ function goalLabel(goal) {
 function dietLabel(diet) {
   const map = { HALAL: '🌙 Halal', VEGETARIAN: '🥦 Vegetarian', VEGAN: '🌱 Vegan', NO_RESTRICTION: '🍽️ No Restriction' }
   return map[diet] || diet
+}
+
+function phaseLabel(phase) {
+  const map = { PRE_SEASON: '🔥 Pre-Season', IN_SEASON: '🏉 In-Season', OFF_SEASON: '💪 Off-Season', POST_SEASON: '🛌 Post-Season' }
+  return map[phase] || phase || ''
 }
 
 function formatDate(dateStr) {
@@ -513,18 +869,31 @@ function renderMarkdown(text) {
 /* ── Saved Plans ─────────────────────────────────────────────── */
 .saved-plans-card { margin-top: 16px; }
 .plans-list       { display: flex; flex-direction: column; gap: 8px; }
+
 .plan-item {
-  display: flex; align-items: center; gap: 12px; padding: 12px;
+  display: flex; align-items: flex-start; gap: 10px; padding: 12px;
   background: var(--color-surface); border: 1px solid var(--color-border);
   border-radius: var(--radius-sm); cursor: pointer;
   transition: border-color var(--transition), background var(--transition);
 }
-.plan-item:hover  { border-color: var(--color-green); }
-.plan-item.active { border-color: var(--color-green); background: var(--color-green-dim); }
-.plan-item-info   { flex: 1; min-width: 0; }
-.plan-item-name   { font-size: 13.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.plan-item-meta   { font-size: 11.5px; color: var(--color-muted); margin-top: 2px; }
-.plan-item-date   { font-size: 11px; color: var(--color-muted); margin-top: 2px; }
+.plan-item:hover         { border-color: var(--color-green); }
+.plan-item.is-selected   { border-color: var(--color-green); background: var(--color-green-dim); }
+.plan-item.is-current    { border-left: 3px solid var(--color-green); }
+
+.plan-item-badge { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.plan-item-info  { flex: 1; min-width: 0; }
+.plan-item-name-row { display: flex; align-items: center; gap: 6px; }
+.plan-item-name  { font-size: 13.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.badge-active    { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; padding: 2px 6px; border-radius: 99px; background: var(--color-green); color: #fff; flex-shrink: 0; }
+.plan-item-meta  { font-size: 11.5px; color: var(--color-muted); margin-top: 2px; }
+.plan-item-date  { font-size: 11px; color: var(--color-muted); margin-top: 3px; }
+
+/* Progress bar in list */
+.plan-item-progress { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
+.progress-bar-track { flex: 1; height: 4px; background: var(--color-border); border-radius: 99px; overflow: hidden; }
+.progress-bar-fill  { height: 100%; background: var(--color-green); border-radius: 99px; transition: width 0.3s ease; }
+.progress-label { font-size: 10px; color: var(--color-muted); white-space: nowrap; }
+
 .delete-btn       { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px 6px; border-radius: var(--radius-sm); opacity: 0.45; transition: opacity var(--transition); flex-shrink: 0; }
 .delete-btn:hover { opacity: 1; }
 
@@ -589,18 +958,143 @@ function renderMarkdown(text) {
 
 /* ── Plan Display ────────────────────────────────────────────── */
 .plan-display { padding: 28px; }
-.plan-display-header { margin-bottom: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--color-border); }
-.plan-display-title  { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+
+.plan-display-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--color-border);
+}
+.plan-header-left    { flex: 1; min-width: 0; }
+.plan-header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+.plan-display-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px; font-weight: 700; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.title-active-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  padding: 3px 8px; border-radius: 99px;
+  background: var(--color-green); color: #fff; font-family: inherit;
+}
+.plan-name-input { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
+
 .plan-tags     { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .tag           { font-size: 11.5px; font-weight: 500; padding: 3px 10px; border-radius: 99px; }
 .tag-position  { background: var(--color-green-dim); color: var(--color-green-light); }
 .tag-goal      { background: #1e3a5f; color: #60a5fa; }
 .tag-diet      { background: #2d1e3a; color: #c084fc; }
 .tag-meals     { background: var(--color-surface); color: var(--color-text-dim); border: 1px solid var(--color-border); }
+.tag-phase     { background: #2a1e3a; color: #c084fc; }
 .plan-stats-line { font-size: 12px; color: var(--color-muted); }
 
+/* Action buttons */
+.btn           { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; border: none; font-family: inherit; transition: all var(--transition); white-space: nowrap; }
+.btn-ghost     { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
+.btn-ghost:hover { background: var(--color-surface-2); }
+.btn-activate  { background: var(--color-green-dim); color: var(--color-green-light); border: 1px solid var(--color-green); }
+.btn-activate:hover:not(:disabled) { background: var(--color-green); color: #fff; }
+.btn-activate:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-save      { background: var(--color-green); color: #fff; }
+.btn-save:hover:not(:disabled) { opacity: 0.85; }
+.btn-save:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-danger    { background: var(--color-error); color: #fff; }
+.btn-danger:hover { opacity: 0.85; }
+.btn-sm        { padding: 5px 10px; font-size: 12px; }
+.active-indicator { font-size: 12.5px; color: var(--color-green-light); font-weight: 500; display: flex; align-items: center; gap: 4px; }
+
+/* ── Tabs ────────────────────────────────────────────────────── */
+.plan-tabs {
+  display: flex; gap: 2px;
+  margin: 18px 0 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.plan-tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 16px; font-size: 13.5px; font-weight: 500;
+  background: none; border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-muted); cursor: pointer; font-family: inherit;
+  margin-bottom: -1px; transition: all var(--transition);
+}
+.plan-tab:hover  { color: var(--color-text); }
+.plan-tab.active { color: var(--color-green-light); border-bottom-color: var(--color-green); }
+.tab-badge {
+  background: var(--color-green); color: #fff;
+  font-size: 10px; font-weight: 700;
+  padding: 1px 6px; border-radius: 99px;
+}
+
+/* ── Plan Body ───────────────────────────────────────────────── */
+.plan-body { padding-top: 20px; overflow: hidden; }
+
+/* ── Edit Body ───────────────────────────────────────────────── */
+.edit-body { padding-top: 20px; }
+.plan-editor {
+  width: 100%; min-height: 440px;
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm); color: var(--color-text);
+  font-size: 13px; font-family: 'Courier New', monospace;
+  padding: 14px; resize: vertical; box-sizing: border-box; line-height: 1.6;
+}
+.plan-editor:focus { outline: none; border-color: var(--color-green); }
+
+/* ── Progress Body ───────────────────────────────────────────── */
+.progress-body { padding-top: 20px; }
+
+.progress-summary {
+  display: flex; align-items: center; gap: 20px;
+  padding: 16px; background: var(--color-surface);
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm); margin-bottom: 20px;
+}
+.progress-ring-wrap { position: relative; width: 60px; height: 60px; flex-shrink: 0; }
+.progress-ring      { width: 60px; height: 60px; }
+.progress-ring-label {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--color-green-light);
+}
+.progress-summary-text  { flex: 1; }
+.progress-summary-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+.progress-summary-sub   { font-size: 12.5px; color: var(--color-muted); margin-bottom: 8px; }
+.reset-btn { color: var(--color-muted); }
+
+/* ── Grouped Checklist ───────────────────────────────────────── */
+.checklist-grouped { display: flex; flex-direction: column; gap: 16px; }
+
+.checklist-day { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); overflow: hidden; }
+
+.checklist-day-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--color-bg-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.checklist-day-title { font-size: 13px; font-weight: 600; color: var(--color-green-light); }
+.checklist-day-count { font-size: 12px; color: var(--color-muted); }
+
+.checklist-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px;
+  cursor: pointer; user-select: none;
+  border-bottom: 1px solid var(--color-border);
+  transition: background var(--transition);
+}
+.checklist-item:last-child { border-bottom: none; }
+.checklist-item:hover { background: var(--color-bg-2); }
+.checklist-item.completed { background: var(--color-green-dim); }
+
+.checklist-check {
+  width: 20px; height: 20px; border: 2px solid var(--color-border);
+  border-radius: 5px; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: var(--color-green-light);
+  flex-shrink: 0; transition: all var(--transition);
+}
+.checklist-item.completed .checklist-check { background: var(--color-green); border-color: var(--color-green); color: #fff; }
+.checklist-label { font-size: 13.5px; flex: 1; }
+.checklist-item.completed .checklist-label { text-decoration: line-through; color: var(--color-muted); }
+.checklist-empty { font-size: 13.5px; color: var(--color-muted); text-align: center; padding: 20px 0; }
+
 /* ── Markdown ────────────────────────────────────────────────── */
-.plan-body { overflow: hidden; }
 .plan-markdown :deep(.md-h2) { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; color: var(--color-green-light); margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--color-border); }
 .plan-markdown :deep(.md-h3) { font-size: 15px; font-weight: 600; color: var(--color-text); margin: 18px 0 8px; }
 .plan-markdown :deep(.md-h4) { font-size: 13.5px; font-weight: 600; color: var(--color-text-dim); margin: 12px 0 6px; }
@@ -621,6 +1115,7 @@ function renderMarkdown(text) {
 
 /* ── Spinner ─────────────────────────────────────────────────── */
 .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+.spinner-sm { width: 13px; height: 13px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Modal ───────────────────────────────────────────────────── */
@@ -629,11 +1124,6 @@ function renderMarkdown(text) {
 .modal h3      { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; }
 .modal p       { font-size: 14px; color: var(--color-text-dim); line-height: 1.6; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
-.btn           { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13.5px; font-weight: 500; cursor: pointer; border: none; font-family: inherit; }
-.btn-ghost     { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
-.btn-ghost:hover  { background: var(--color-surface-2); }
-.btn-danger    { background: var(--color-error); color: #fff; }
-.btn-danger:hover { opacity: 0.85; }
 
 /* ── Transitions ─────────────────────────────────────────────── */
 .fade-enter-active, .fade-leave-active { transition: opacity 0.25s; }

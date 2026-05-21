@@ -1,5 +1,7 @@
 package com.utm.rugbyplanner.service;
 
+import com.utm.rugbyplanner.dto.PlanEditRequest;
+import com.utm.rugbyplanner.dto.PlanProgressRequest;
 import com.utm.rugbyplanner.dto.WorkoutPlanRequest;
 import com.utm.rugbyplanner.dto.WorkoutPlanResponse;
 import com.utm.rugbyplanner.model.User;
@@ -62,6 +64,9 @@ public class WorkoutPlanService {
                 .age(req.getAge())
                 .injuryNotes(req.getInjuryNotes())
                 .sessionsPerWeek(req.getSessionsPerWeek())
+                .trainingPhase(req.getTrainingPhase())
+                .availableEquipment(req.getAvailableEquipment())
+                .focusArea(req.getFocusArea())
                 .generatedPlan(generatedPlan)
                 .build();
 
@@ -103,6 +108,59 @@ public class WorkoutPlanService {
         log.info("UC005 Workout plan deleted — id: {}", planId);
     }
 
+    // ── UC005: Edit plan name / content ───────────────────────────────────────
+
+    public WorkoutPlanResponse editPlan(String username, String planId, PlanEditRequest req) {
+        User user = findUser(username);
+        WorkoutPlan plan = workoutPlanRepository
+                .findByIdAndUserId(planId, user.getId())
+                .orElseThrow(() -> new RuntimeException("Workout plan not found."));
+        plan.setPlanName(req.getPlanName());
+        plan.setGeneratedPlan(req.getGeneratedPlan());
+        WorkoutPlan saved = workoutPlanRepository.save(plan);
+        log.info("UC005 Workout plan edited — id: {}", planId);
+        return toResponse(saved);
+    }
+
+    // ── UC005: Set plan as active (currently in use) ──────────────────────────
+
+    public WorkoutPlanResponse activatePlan(String username, String planId) {
+        User user = findUser(username);
+
+        // Deactivate all other plans for this user
+        workoutPlanRepository.findByUserIdOrderByCreatedAtDesc(user.getId())
+                .forEach(p -> {
+                    if (p.isActive()) {
+                        p.setActive(false);
+                        workoutPlanRepository.save(p);
+                    }
+                });
+
+        // Activate the target plan
+        WorkoutPlan plan = workoutPlanRepository
+                .findByIdAndUserId(planId, user.getId())
+                .orElseThrow(() -> new RuntimeException("Workout plan not found."));
+        plan.setActive(true);
+        WorkoutPlan saved = workoutPlanRepository.save(plan);
+        log.info("UC005 Workout plan set as active — id: {}", planId);
+        return toResponse(saved);
+    }
+
+    // ── UC005: Update progress / checklist ───────────────────────────────────
+
+    public WorkoutPlanResponse updateProgress(String username, String planId, PlanProgressRequest req) {
+        User user = findUser(username);
+        WorkoutPlan plan = workoutPlanRepository
+                .findByIdAndUserId(planId, user.getId())
+                .orElseThrow(() -> new RuntimeException("Workout plan not found."));
+        plan.setCompletedItems(req.getCompletedItems() != null
+                ? req.getCompletedItems() : new java.util.ArrayList<>());
+        WorkoutPlan saved = workoutPlanRepository.save(plan);
+        log.info("UC005 Workout progress updated — id: {}, completed: {}",
+                planId, saved.getCompletedItems().size());
+        return toResponse(saved);
+    }
+
     // ── Prompt builder ────────────────────────────────────────────────────────
 
     /**
@@ -112,9 +170,12 @@ public class WorkoutPlanService {
      * plan with day-by-day breakdown, sets/reps, and rugby context.
      */
     private String buildPrompt(WorkoutPlanRequest req) {
-        String injuries = (req.getInjuryNotes() != null && !req.getInjuryNotes().isBlank())
-                ? req.getInjuryNotes()
-                : "None reported";
+        String injuries   = (req.getInjuryNotes() != null && !req.getInjuryNotes().isBlank())
+                ? req.getInjuryNotes() : "None reported";
+        String focusArea  = (req.getFocusArea() != null && !req.getFocusArea().isBlank())
+                ? req.getFocusArea() : "General rugby performance";
+        String phase      = phaseLabel(req.getTrainingPhase());
+        String equipment  = equipmentLabel(req.getAvailableEquipment());
 
         return String.format("""
 You are an expert rugby strength and conditioning coach specialising in university-level rugby (UTM Pirates, Malaysia).
@@ -127,22 +188,31 @@ PLAYER PROFILE:
 - Training Level: %s
 - Physical Stats: %d kg body weight, %d cm height, %d years old
 - Sessions Per Week: %d
+- Training Phase: %s
+- Available Equipment: %s
+- Specific Focus / Weakness: %s
 - Injury / Health Notes: %s
 
 INSTRUCTIONS:
-1. Structure the plan as exactly %d training days (e.g. Day 1, Day 2, ...) with rest days noted.
-2. Each training day must include:
+1. Structure the plan as exactly %d training days (e.g. Day 1, Day 2, ...) with rest/recovery days clearly noted.
+2. IMPORTANT — Training phase is %s. Adjust volume, intensity, and exercise selection accordingly:
+   - PRE-SEASON: high volume, build base fitness and strength
+   - IN-SEASON: maintenance, lower volume, prioritise recovery
+   - OFF-SEASON: hypertrophy, address weaknesses, higher intensity
+   - POST-SEASON: active recovery, mobility, deload
+3. IMPORTANT — Available equipment is %s. Only include exercises that can be performed with this equipment.
+4. Prioritise the athlete's specific focus area: %s
+5. Each training day must include:
    a) Session Focus (e.g. "Lower Body Strength & Power")
    b) Warm-Up (5–10 minutes, specific movements)
    c) Main Workout (exercises with sets × reps, load guidance as %% of bodyweight or RPE, rest periods)
    d) Finisher / Conditioning (optional, position-appropriate)
    e) Cool-Down (5 minutes)
-   f) Coaching Notes (position-specific tips relevant to %s)
-3. Take the player's goal (%s) and training level (%s) into account when selecting exercises and volume.
-4. IMPORTANT — Injury consideration: %s. Avoid exercises that aggravate these issues and include safe alternatives.
-5. Use rugby-relevant exercises (scrummaging drills, tackle bag work, sprint intervals, etc.) where appropriate.
-6. Format your output using clear markdown: use ## for day headings, ### for sub-sections, and bullet points for exercises.
-7. End with a brief "Weekly Structure Summary" table showing Day → Focus → Volume.
+   f) Coaching Notes (position-specific tips for %s)
+6. Take goal (%s) and training level (%s) into account for volume and exercise selection.
+7. IMPORTANT — Injury notes: %s. Avoid aggravating exercises and suggest safe alternatives.
+8. Format output using markdown: ## for day headings, ### for sub-sections, bullet points for exercises.
+9. End with a "Weekly Structure Summary" table: Day | Focus | Volume | Key Exercises.
 
 Begin the plan now:
 """,
@@ -150,17 +220,43 @@ Begin the plan now:
                 req.getRugbyPosition(),
                 req.getGoal(),
                 req.getTrainingLevel(),
-                req.getWeight(),
-                req.getHeight(),
-                req.getAge(),
+                req.getWeight(), req.getHeight(), req.getAge(),
                 req.getSessionsPerWeek(),
+                phase,
+                equipment,
+                focusArea,
                 injuries,
                 req.getSessionsPerWeek(),
+                phase,
+                equipment,
+                focusArea,
                 req.getRugbyPosition(),
                 req.getGoal(),
                 req.getTrainingLevel(),
                 injuries
         );
+    }
+
+    private String phaseLabel(String phase) {
+        if (phase == null) return "General";
+        return switch (phase) {
+            case "PRE_SEASON"  -> "Pre-Season";
+            case "IN_SEASON"   -> "In-Season";
+            case "OFF_SEASON"  -> "Off-Season";
+            case "POST_SEASON" -> "Post-Season (Deload)";
+            default            -> phase;
+        };
+    }
+
+    private String equipmentLabel(String equipment) {
+        if (equipment == null) return "Full gym";
+        return switch (equipment) {
+            case "GYM"     -> "Full gym (barbells, machines, cables, dumbbells)";
+            case "HOME"    -> "Home setup (dumbbells, resistance bands, pull-up bar)";
+            case "FIELD"   -> "Rugby field only (bodyweight, cones, tackle bags)";
+            case "MINIMAL" -> "Minimal equipment (bodyweight exercises only)";
+            default        -> equipment;
+        };
     }
 
     // ── Mapper ────────────────────────────────────────────────────────────────
@@ -178,7 +274,14 @@ Begin the plan now:
                 .age(plan.getAge())
                 .injuryNotes(plan.getInjuryNotes())
                 .sessionsPerWeek(plan.getSessionsPerWeek())
+                .trainingPhase(plan.getTrainingPhase())
+                .availableEquipment(plan.getAvailableEquipment())
+                .focusArea(plan.getFocusArea())
                 .generatedPlan(plan.getGeneratedPlan())
+                .trainerNote(plan.getTrainerNote())
+                .lastEditedBy(plan.getLastEditedBy())
+                .isActive(plan.isActive())
+                .completedItems(plan.getCompletedItems())
                 .createdAt(plan.getCreatedAt())
                 .updatedAt(plan.getUpdatedAt())
                 .build();

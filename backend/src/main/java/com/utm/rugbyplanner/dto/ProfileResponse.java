@@ -22,6 +22,8 @@ public class ProfileResponse {
     private String        fullName;
     private String        email;
     private String        phoneNumber;
+    private String        matrixNumber;
+    private String        icNumber;
     private String        profilePicture;   // base64 data URL
     private User.UserRole userRole;
 

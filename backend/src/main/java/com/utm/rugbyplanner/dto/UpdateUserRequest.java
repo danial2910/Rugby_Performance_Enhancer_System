@@ -25,6 +25,17 @@ public class UpdateUserRequest {
     )
     private String phoneNumber;
 
+    /** UTM matrix number — optional, e.g. "A22EC0001" */
+    @Size(max = 20, message = "Matrix number cannot exceed 20 characters")
+    private String matrixNumber;
+
+    /** Malaysian IC number — optional, e.g. "020101-10-1234" */
+    @Pattern(
+        regexp = "^(\\d{6}-\\d{2}-\\d{4})?$",
+        message = "IC number must be in the format XXXXXX-XX-XXXX"
+    )
+    private String icNumber;
+
     /**
      * Base64 data URL of the profile picture.
      * Format: "data:image/jpeg;base64,/9j/4AAQSkZJRgAB..."

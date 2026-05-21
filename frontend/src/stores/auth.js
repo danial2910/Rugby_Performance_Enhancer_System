@@ -18,6 +18,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!token.value)
   const isAthlete       = computed(() => user.value?.userRole === 'ATHLETE')
   const isTrainer       = computed(() => user.value?.userRole === 'TRAINER')
+  const isAdmin         = computed(() => user.value?.userRole === 'ADMIN')
   const fullName        = computed(() => user.value?.fullName || '')
   const username        = computed(() => user.value?.username || '')
   const userRole        = computed(() => user.value?.userRole || null)
@@ -38,7 +39,10 @@ export const useAuthStore = defineStore('auth', () => {
         }
         localStorage.setItem('access_token', d.accessToken)
         localStorage.setItem('user', JSON.stringify(user.value))
-        await router.push(d.userRole === 'TRAINER' ? '/trainer' : '/dashboard')
+        const dest = d.userRole === 'ADMIN' ? '/admin'
+                   : d.userRole === 'TRAINER' ? '/trainer'
+                   : '/dashboard'
+        await router.push(dest)
       } else {
         error.value = response.message || 'Login failed.'
       }
@@ -118,7 +122,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     token, user, loading, error,
-    isAuthenticated, isAthlete, isTrainer,
+    isAuthenticated, isAthlete, isTrainer, isAdmin,
     fullName, username, userRole, profilePicture,
     login, register, logout, clearError, syncUserFromProfile
   }
