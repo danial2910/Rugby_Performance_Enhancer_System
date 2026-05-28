@@ -118,6 +118,19 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Business logic errors thrown as RuntimeException (e.g. availability validation,
+     * wrong status, ownership checks). Return the actual message to the client.
+     * HTTP 400 Bad Request
+     */
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex) {
+        log.warn("Business rule violation: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    /**
      * Catch-all — logs the full stack trace and returns a safe message.
      * HTTP 500 Internal Server Error
      */

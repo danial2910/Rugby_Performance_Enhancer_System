@@ -2,7 +2,9 @@
   <div class="register-page">
     <div class="register-brand">
       <div class="brand-inner">
-        <div class="brand-logo">🏉</div>
+        <div class="brand-logo">
+          <img src="/logo.png" alt="UTM Pirates Rugby" class="brand-logo-img" />
+        </div>
         <h1 class="brand-title">Join the<br>Pirates</h1>
         <p class="brand-tagline">Create your account and start your AI-powered training journey.</p>
         <div class="step-progress">
@@ -269,7 +271,8 @@ async function handleRegister() {
 .register-page { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; width: 100%; max-width: 1100px; margin: 0 auto; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
 .register-brand { background: #0f4d2b; display: flex; align-items: center; justify-content: center; padding: 48px 40px; }
 .brand-inner { max-width: 300px; }
-.brand-logo { font-size: 52px; display: block; margin-bottom: 16px; }
+.brand-logo { display: block; margin-bottom: 16px; }
+.brand-logo-img { width: 130px; height: 130px; object-fit: contain; mix-blend-mode: screen; opacity: 0.95; }
 .brand-title { font-family: 'Barlow Condensed', sans-serif; font-size: 42px; font-weight: 900; line-height: 1.05; color: #e8f0ea; margin-bottom: 12px; }
 .brand-tagline { font-size: 14px; color: #a8c0ae; line-height: 1.65; margin-bottom: 40px; }
 .step-progress { display: flex; flex-direction: column; gap: 20px; margin-bottom: 44px; }

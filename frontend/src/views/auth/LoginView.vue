@@ -2,8 +2,10 @@
   <div class="login-page">
     <div class="login-brand">
       <div class="brand-inner">
-        <div class="brand-logo">🏉</div>
-        <h1 class="brand-title">Rugby AI<br>Planner</h1>
+        <div class="brand-logo">
+          <img src="/logo.png" alt="UTM Pirates Rugby" class="brand-logo-img" />
+        </div>
+        <h1 class="brand-title">Rugby Performance<br>Enhancement System</h1>
         <p class="brand-tagline">Personalized nutrition &amp; fitness<br>for UTM Pirates athletes</p>
         <ul class="brand-features">
           <li><span class="feature-icon">🥗</span><span>AI-powered meal plans</span></li>
@@ -60,7 +62,7 @@
           </button>
         </div>
 
-        <div class="form-divider"><span>New to Rugby AI Planner?</span></div>
+        <div class="form-divider"><span>New to RPES?</span></div>
         <RouterLink to="/register" class="btn-register">Create an account</RouterLink>
       </div>
     </div>
@@ -122,8 +124,9 @@ async function handleLogin() {
 .login-page { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; width: 100%; max-width: 1100px; margin: 0 auto; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
 .login-brand { background: #0f4d2b; display: flex; align-items: center; justify-content: center; padding: 48px 40px; }
 .brand-inner { max-width: 320px; }
-.brand-logo { font-size: 52px; margin-bottom: 16px; display: block; }
-.brand-title { font-family: 'Barlow Condensed', sans-serif; font-size: 44px; font-weight: 900; line-height: 1.05; color: #e8f0ea; margin-bottom: 12px; }
+.brand-logo { margin-bottom: 16px; display: block; }
+.brand-logo-img { width: 140px; height: 140px; object-fit: contain; mix-blend-mode: screen; opacity: 0.95; }
+.brand-title { font-family: 'Barlow Condensed', sans-serif; font-size: 36px; font-weight: 900; line-height: 1.05; color: #e8f0ea; margin-bottom: 12px; }
 .brand-tagline { font-size: 15px; color: #a8c0ae; line-height: 1.6; margin-bottom: 36px; }
 .brand-features { list-style: none; display: flex; flex-direction: column; gap: 14px; margin-bottom: 40px; }
 .brand-features li { display: flex; align-items: center; gap: 12px; font-size: 14px; color: #a8c0ae; }

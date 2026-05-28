@@ -53,7 +53,7 @@ const routes = [
         component: LoginView,
         meta: {
           requiresAuth: false,
-          title: 'Login — Rugby AI Planner'
+          title: 'Login — Rugby Performance Enhancement System'
         }
       },
       {
@@ -62,7 +62,7 @@ const routes = [
         component: RegisterView,
         meta: {
           requiresAuth: false,
-          title: 'Register — Rugby AI Planner'
+          title: 'Register — Rugby Performance Enhancement System'
         }
       }
     ]
@@ -81,7 +81,7 @@ const routes = [
         meta: {
           requiresAuth: true,
           role: 'ATHLETE',
-          title: 'Dashboard — Rugby AI Planner'
+          title: 'Dashboard — Rugby Performance Enhancement System'
         }
       },
       {
@@ -91,7 +91,7 @@ const routes = [
         meta: {
           requiresAuth: true,
           role: 'TRAINER',
-          title: 'Trainer Dashboard — Rugby AI Planner'
+          title: 'Trainer Dashboard — Rugby Performance Enhancement System'
         }
       },
       {
@@ -100,7 +100,7 @@ const routes = [
         component: MealPlannerView,
         meta: {
           requiresAuth: true,
-          title: 'Meal Planner — Rugby AI Planner'
+          title: 'Meal Planner — Rugby Performance Enhancement System'
         }
       },
       {
@@ -109,7 +109,7 @@ const routes = [
         component: WorkoutView,
         meta: {
           requiresAuth: true,
-          title: 'Workout Planner — Rugby AI Planner'
+          title: 'Workout Planner — Rugby Performance Enhancement System'
         }
       },
       {
@@ -118,7 +118,7 @@ const routes = [
         component: ChatbotView,
         meta: {
           requiresAuth: true,
-          title: 'AI Chatbot — Rugby AI Planner'
+          title: 'AI Chatbot — Rugby Performance Enhancement System'
         }
       },
       {
@@ -127,7 +127,7 @@ const routes = [
         component: AppointmentView,
         meta: {
           requiresAuth: true,
-          title: 'Appointments — Rugby AI Planner'
+          title: 'Appointments — Rugby Performance Enhancement System'
         }
       },
       {
@@ -136,7 +136,7 @@ const routes = [
         component: ProfileView,
         meta: {
           requiresAuth: true,
-          title: 'My Profile — Rugby AI Planner'
+          title: 'My Profile — Rugby Performance Enhancement System'
         }
       },
       {
@@ -146,7 +146,7 @@ const routes = [
         meta: {
           requiresAuth: true,
           role: 'ADMIN',
-          title: 'User Management — Rugby AI Planner'
+          title: 'User Management — Rugby Performance Enhancement System'
         }
       }
     ]
@@ -169,7 +169,7 @@ const router = createRouter({
 // ─── Navigation Guard ──────────────────────────────────────────────────────
 router.beforeEach((to, from, next) => {
   // Update page title
-  document.title = to.meta.title || 'Rugby AI Planner — UTM Pirates'
+  document.title = to.meta.title || 'Rugby Performance Enhancement System — UTM Pirates'
 
   const token    = localStorage.getItem('access_token')
   const userRaw  = localStorage.getItem('user')

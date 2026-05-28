@@ -30,6 +30,10 @@
           <span class="stat-num">{{ trainerUpdateCount }}</span>
           <span class="stat-lbl">Trainer Updates</span>
         </div>
+        <div class="stat-pill" :class="{ 'stat-pill-appt': upcomingAppointments.length > 0 }">
+          <span class="stat-num">{{ upcomingAppointments.length }}</span>
+          <span class="stat-lbl">Upcoming Sessions</span>
+        </div>
       </div>
     </div>
 
@@ -224,52 +228,165 @@
 
       </div>
 
-      <!-- ── All Trainer Updates ──────────────────────────────────────────── -->
-      <div id="trainer-updates" v-if="trainerUpdateCount > 0" class="trainer-updates-section">
-        <div class="section-header">
-          <h2 class="section-title">
-            <span class="section-icon">✏️</span> Trainer Changes
-          </h2>
-          <p class="section-sub">Your trainer has made changes to the following plans.</p>
-        </div>
+      <!-- ── Trainer Changes + Upcoming Appointments (side by side) ──────── -->
+      <div
+        v-if="trainerUpdateCount > 0 || upcomingAppointments.length > 0"
+        class="updates-appt-row"
+      >
 
-        <div class="updates-grid">
-          <div
-            v-for="item in allTrainerUpdates"
-            :key="item.plan.id + item.type"
-            class="update-card"
-          >
-            <div class="update-card-top">
-              <div class="update-type-badge" :class="item.type === 'workout' ? 'badge-workout' : 'badge-meal'">
-                {{ item.type === 'workout' ? '💪 Workout' : '🥗 Meal' }}
-              </div>
-              <span v-if="item.plan.isActive" class="active-chip">✅ Active</span>
-              <span class="update-date">{{ formatDate(item.plan.updatedAt || item.plan.createdAt) }}</span>
-            </div>
-            <div class="update-plan-name">{{ item.plan.planName }}</div>
-            <div class="update-meta">
-              <span v-if="item.plan.rugbyPosition">🏉 {{ item.plan.rugbyPosition }}</span>
-              <span v-if="item.plan.goal">· {{ item.type === 'workout' ? goalLabel(item.plan.goal) : mealGoalLabel(item.plan.goal) }}</span>
-            </div>
+        <!-- Trainer Updates column -->
+        <div id="trainer-updates" v-if="trainerUpdateCount > 0" class="trainer-updates-section">
+          <div class="section-header">
+            <h2 class="section-title">
+              <span class="section-icon">✏️</span> Trainer Changes
+            </h2>
+            <p class="section-sub">Your trainer has made changes to the following plans.</p>
+          </div>
 
-            <div class="update-note-box">
-              <div class="unb-header">
-                <span class="unb-icon">📝</span>
-                <span class="unb-label">Trainer Note</span>
-                <span v-if="item.plan.lastEditedBy" class="unb-by">— {{ item.plan.lastEditedBy }}</span>
-              </div>
-              <p class="unb-text">{{ item.plan.trainerNote }}</p>
-            </div>
-
-            <router-link
-              :to="item.type === 'workout' ? '/workout' : '/meal-planner'"
-              class="update-view-btn"
+          <div class="updates-grid">
+            <div
+              v-for="item in allTrainerUpdates"
+              :key="item.plan.id + item.type"
+              class="update-card"
             >
-              View Full Plan →
-            </router-link>
+              <div class="update-card-top">
+                <div class="update-type-badge" :class="item.type === 'workout' ? 'badge-workout' : 'badge-meal'">
+                  {{ item.type === 'workout' ? '💪 Workout' : '🥗 Meal' }}
+                </div>
+                <span v-if="item.plan.isActive" class="active-chip">✅ Active</span>
+                <span class="update-date">{{ formatDate(item.plan.updatedAt || item.plan.createdAt) }}</span>
+              </div>
+              <div class="update-plan-name">{{ item.plan.planName }}</div>
+              <div class="update-meta">
+                <span v-if="item.plan.rugbyPosition">🏉 {{ item.plan.rugbyPosition }}</span>
+                <span v-if="item.plan.goal">· {{ item.type === 'workout' ? goalLabel(item.plan.goal) : mealGoalLabel(item.plan.goal) }}</span>
+              </div>
+
+              <div class="update-note-box">
+                <div class="unb-header">
+                  <span class="unb-icon">📝</span>
+                  <span class="unb-label">Trainer Note</span>
+                  <span v-if="item.plan.lastEditedBy" class="unb-by">— {{ item.plan.lastEditedBy }}</span>
+                </div>
+                <p class="unb-text">{{ item.plan.trainerNote }}</p>
+              </div>
+
+              <router-link
+                :to="item.type === 'workout' ? '/workout' : '/meal-planner'"
+                class="update-view-btn"
+              >
+                View Full Plan →
+              </router-link>
+            </div>
           </div>
         </div>
-      </div>
+
+        <!-- Upcoming Appointments column -->
+        <div v-if="upcomingAppointments.length > 0" class="appt-reminder-section">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span class="section-icon">📅</span> Upcoming Appointments
+          </h2>
+          <p class="section-sub">Your confirmed sessions — don't miss them!</p>
+        </div>
+
+        <div class="appt-reminder-grid">
+          <div
+            v-for="appt in upcomingAppointments"
+            :key="appt.id"
+            class="appt-reminder-card"
+            :class="{
+              'appt-today':   isToday(appt.date),
+              'appt-soon':    isSoon(appt.date) && !isToday(appt.date),
+              'appt-future':  !isSoon(appt.date) && !isToday(appt.date)
+            }"
+          >
+            <!-- Header row -->
+            <div class="arc-header">
+              <span class="arc-badge" :class="{
+                'arc-badge-today':  isToday(appt.date),
+                'arc-badge-soon':   isSoon(appt.date) && !isToday(appt.date),
+                'arc-badge-future': !isSoon(appt.date) && !isToday(appt.date)
+              }">
+                {{ isToday(appt.date) ? '🔔 Today!' : isSoon(appt.date) ? '⚡ Soon' : '✅ Confirmed' }}
+              </span>
+              <span class="arc-service">{{ serviceLabel(appt.serviceType) }}</span>
+            </div>
+
+            <!-- Trainer + meta -->
+            <div class="arc-trainer-row">
+              <div class="arc-avatar">{{ initials(appt.trainerName) }}</div>
+              <div class="arc-trainer-info">
+                <div class="arc-trainer-name">{{ appt.trainerName }}</div>
+                <div class="arc-appt-meta">
+                  <span>📅 {{ formatApptDate(appt.date) }}</span>
+                  <span>🕐 {{ appt.time }}</span>
+                  <span>⏱ {{ appt.duration }} min</span>
+                  <span>{{ appt.location === 'GYM' ? '🏋️ Gym' : '💻 Online' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Countdown -->
+            <div class="arc-countdown" :class="{ 'countdown-today': isToday(appt.date), 'countdown-soon': isSoon(appt.date) && !isToday(appt.date) }">
+              <template v-if="isPast(appt.date, appt.time)">
+                <span class="countdown-label">Appointment time passed</span>
+              </template>
+              <template v-else-if="isToday(appt.date)">
+                <div class="countdown-units">
+                  <div class="cd-unit">
+                    <span class="cd-num">{{ countdown(appt.date, appt.time).hours }}</span>
+                    <span class="cd-lbl">hrs</span>
+                  </div>
+                  <span class="cd-sep">:</span>
+                  <div class="cd-unit">
+                    <span class="cd-num">{{ countdown(appt.date, appt.time).minutes }}</span>
+                    <span class="cd-lbl">min</span>
+                  </div>
+                  <span class="cd-sep">:</span>
+                  <div class="cd-unit">
+                    <span class="cd-num">{{ countdown(appt.date, appt.time).seconds }}</span>
+                    <span class="cd-lbl">sec</span>
+                  </div>
+                </div>
+                <span class="countdown-sublabel">until your session</span>
+              </template>
+              <template v-else>
+                <div class="countdown-units">
+                  <div class="cd-unit">
+                    <span class="cd-num">{{ countdown(appt.date, appt.time).days }}</span>
+                    <span class="cd-lbl">days</span>
+                  </div>
+                  <span class="cd-sep">:</span>
+                  <div class="cd-unit">
+                    <span class="cd-num">{{ countdown(appt.date, appt.time).hours }}</span>
+                    <span class="cd-lbl">hrs</span>
+                  </div>
+                  <span class="cd-sep">:</span>
+                  <div class="cd-unit">
+                    <span class="cd-num">{{ countdown(appt.date, appt.time).minutes }}</span>
+                    <span class="cd-lbl">min</span>
+                  </div>
+                  <span class="cd-sep">:</span>
+                  <div class="cd-unit">
+                    <span class="cd-num">{{ countdown(appt.date, appt.time).seconds }}</span>
+                    <span class="cd-lbl">sec</span>
+                  </div>
+                </div>
+                <span class="countdown-sublabel">until your session</span>
+              </template>
+            </div>
+
+            <!-- Trainer remarks if any -->
+            <div v-if="appt.trainerRemarks" class="arc-remarks">
+              <span class="arc-remarks-icon">💬</span>
+              <span>{{ appt.trainerRemarks }}</span>
+            </div>
+          </div>
+        </div>
+      </div><!-- end appt-reminder-section -->
+
+      </div><!-- end updates-appt-row -->
 
       <!-- ── Quick Links (when no active plans or no trainer updates) ──────── -->
       <div v-if="!activeWorkout || !activeMeal" class="quick-links">
@@ -307,18 +424,24 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { useAuthStore }    from '@/stores/auth'
-import { useProfileStore } from '@/stores/profile'
-import { useWorkoutStore } from '@/stores/workout'
-import { useMealStore }    from '@/stores/meal'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useAuthStore }        from '@/stores/auth'
+import { useProfileStore }     from '@/stores/profile'
+import { useWorkoutStore }     from '@/stores/workout'
+import { useMealStore }        from '@/stores/meal'
+import { useAppointmentStore } from '@/stores/appointment'
 
 const authStore    = useAuthStore()
 const profileStore = useProfileStore()
 const workoutStore = useWorkoutStore()
 const mealStore    = useMealStore()
+const apptStore    = useAppointmentStore()
 
 const loading = ref(true)
+
+// ── Live clock for countdown ──────────────────────────────────────────────────
+const now = ref(new Date())
+let clockTimer = null
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -327,9 +450,17 @@ onMounted(async () => {
   await Promise.all([
     profileStore.fetchProfile(),
     workoutStore.fetchPlans(),
-    mealStore.fetchPlans()
+    mealStore.fetchPlans(),
+    apptStore.fetchAthleteAppointments()
   ])
   loading.value = false
+
+  // Tick every second for the countdown timer
+  clockTimer = setInterval(() => { now.value = new Date() }, 1000)
+})
+
+onUnmounted(() => {
+  if (clockTimer) clearInterval(clockTimer)
 })
 
 // ── Active plans ──────────────────────────────────────────────────────────────
@@ -356,6 +487,72 @@ const allTrainerUpdates = computed(() => {
 })
 
 const trainerUpdateCount = computed(() => allTrainerUpdates.value.length)
+
+// ── Upcoming approved appointments ────────────────────────────────────────────
+
+const upcomingAppointments = computed(() => {
+  const todayStr = new Date().toISOString().split('T')[0]
+  return apptStore.appointments
+    .filter(a => a.status === 'APPROVED' && a.date >= todayStr)
+    .sort((a, b) => {
+      // Sort by date then time ascending
+      const da = new Date(`${a.date}T${a.time}:00`)
+      const db = new Date(`${b.date}T${b.time}:00`)
+      return da - db
+    })
+})
+
+// ── Countdown helpers ──────────────────────────────────────────────────────────
+
+function apptDateTime(date, time) {
+  return new Date(`${date}T${time}:00`)
+}
+
+function isToday(date) {
+  const todayStr = now.value.toISOString().split('T')[0]
+  return date === todayStr
+}
+
+function isSoon(date) {
+  // Within the next 3 days
+  const dt     = new Date(date + 'T00:00:00')
+  const todayMs = new Date(now.value.toISOString().split('T')[0] + 'T00:00:00').getTime()
+  const diffDays = (dt.getTime() - todayMs) / (1000 * 60 * 60 * 24)
+  return diffDays <= 3
+}
+
+function isPast(date, time) {
+  return apptDateTime(date, time) <= now.value
+}
+
+function countdown(date, time) {
+  const target  = apptDateTime(date, time)
+  const diffMs  = target - now.value
+  if (diffMs <= 0) return { days: 0, hours: '00', minutes: '00', seconds: '00' }
+
+  const totalSecs = Math.floor(diffMs / 1000)
+  const days      = Math.floor(totalSecs / (60 * 60 * 24))
+  const hours     = String(Math.floor((totalSecs % (60 * 60 * 24)) / 3600)).padStart(2, '0')
+  const minutes   = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0')
+  const seconds   = String(totalSecs % 60).padStart(2, '0')
+  return { days, hours, minutes, seconds }
+}
+
+function serviceLabel(s) {
+  const m = {
+    FITNESS_TRAINING:     '💪 Fitness Training',
+    NUTRITION_COUNSELLING:'🥗 Nutrition Counselling',
+    WELLNESS_COACHING:    '🧘 Wellness Coaching'
+  }
+  return m[s] || s
+}
+
+function formatApptDate(d) {
+  if (!d) return ''
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-MY', {
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
+  })
+}
 
 // ── Workout progress ──────────────────────────────────────────────────────────
 
@@ -847,6 +1044,130 @@ function phaseLabel(phase) {
 .quick-title { font-size: 14px; font-weight: 700; color: var(--color-text); margin-bottom: 2px; }
 .quick-sub   { font-size: 12px; color: var(--color-muted); }
 .quick-arrow { font-size: 18px; color: var(--color-muted); margin-left: auto; }
+
+/* ── Side-by-side row: Trainer Changes + Upcoming Appointments ─────────────── */
+.updates-appt-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.updates-appt-row > * {
+  flex: 1;
+  min-width: 0;
+}
+@media (max-width: 900px) {
+  .updates-appt-row { flex-direction: column; }
+}
+
+/* ── Appointment Reminder Section ──────────────────────────────────────────── */
+.appt-reminder-section { display: flex; flex-direction: column; gap: 16px; }
+
+.appt-reminder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.appt-reminder-card {
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  display: flex; flex-direction: column; gap: 12px;
+  transition: border-color 0.2s;
+}
+
+.appt-today  { border-left: 4px solid #f59e0b; background: rgba(245,158,11,0.04); }
+.appt-soon   { border-left: 4px solid #3b82f6; background: rgba(59,130,246,0.04); }
+.appt-future { border-left: 4px solid var(--color-green-light); background: rgba(180,255,0,0.03); }
+
+/* Badge row */
+.arc-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.arc-badge {
+  font-size: 11px; font-weight: 700;
+  padding: 3px 9px; border-radius: 20px;
+}
+.arc-badge-today  { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.arc-badge-soon   { background: rgba(59,130,246,0.15); color: #3b82f6; }
+.arc-badge-future { background: rgba(180,255,0,0.12);  color: var(--color-green-light); }
+
+.arc-service { font-size: 13px; font-weight: 600; color: var(--color-text); }
+
+/* Trainer row */
+.arc-trainer-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.arc-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--color-bg-3);
+  border: 1px solid var(--color-border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+  color: var(--color-green-light);
+  flex-shrink: 0;
+}
+.arc-trainer-info { flex: 1; min-width: 0; }
+.arc-trainer-name { font-size: 14px; font-weight: 700; color: var(--color-text); margin-bottom: 4px; }
+.arc-appt-meta {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  font-size: 11px; color: var(--color-muted);
+}
+
+/* Countdown */
+.arc-countdown {
+  background: var(--color-bg-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.countdown-today  { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.3); }
+.countdown-soon   { background: rgba(59,130,246,0.06); border-color: rgba(59,130,246,0.3); }
+
+.countdown-units {
+  display: flex; align-items: center; gap: 4px;
+}
+.cd-unit {
+  display: flex; flex-direction: column; align-items: center; min-width: 44px;
+}
+.cd-num {
+  font-family: 'Barlow Condensed', monospace;
+  font-size: 28px; font-weight: 700; line-height: 1;
+  color: var(--color-text);
+}
+.countdown-today .cd-num  { color: #f59e0b; }
+.countdown-soon .cd-num   { color: #3b82f6; }
+.cd-lbl  {
+  font-size: 9px; color: var(--color-muted);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+.cd-sep  {
+  font-size: 22px; font-weight: 700;
+  color: var(--color-muted);
+  align-self: flex-start; margin-top: 2px; padding: 0 2px;
+}
+
+.countdown-label    { font-size: 13px; color: var(--color-muted); }
+.countdown-sublabel { font-size: 11px; color: var(--color-muted); }
+
+/* Trainer remarks */
+.arc-remarks {
+  display: flex; align-items: flex-start; gap: 7px;
+  font-size: 12px; color: var(--color-muted);
+  background: var(--color-bg-3);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+}
+.arc-remarks-icon { flex-shrink: 0; font-size: 13px; }
+
+/* Stat pill — upcoming sessions */
+.stat-pill-appt {
+  background: rgba(180,255,0,0.08);
+  border-color: rgba(180,255,0,0.35);
+}
+.stat-pill-appt .stat-num { color: var(--color-green-light); }
 
 /* ── Transitions ───────────────────────────────────────────────────────────── */
 .slide-down-enter-active { transition: all 0.3s ease; }

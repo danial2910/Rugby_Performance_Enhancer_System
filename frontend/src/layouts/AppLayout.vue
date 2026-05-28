@@ -7,9 +7,11 @@
     <aside class="sidebar">
       <!-- Logo -->
       <div class="sidebar-logo">
-        <div class="logo-mark">🏉</div>
+        <div class="logo-mark">
+          <img src="/logo.png" alt="UTM Pirates Rugby" class="logo-img" />
+        </div>
         <div class="logo-text">
-          <span class="logo-title">Rugby AI</span>
+          <span class="logo-title">RPES</span>
           <span class="logo-sub">UTM Pirates</span>
         </div>
       </div>
@@ -104,7 +106,7 @@ const pageTitles = {
   Profile:         'My Profile'
 }
 
-const pageTitle = computed(() => pageTitles[route.name] || 'Rugby AI Planner')
+const pageTitle = computed(() => pageTitles[route.name] || 'Rugby Performance Enhancement System')
 
 async function handleLogout() {
   await authStore.logout()
@@ -139,12 +141,18 @@ async function handleLogout() {
 }
 
 .logo-mark {
-  width: 36px; height: 36px;
+  width: 38px; height: 38px;
   background: var(--color-green);
   border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
+  overflow: hidden;
   flex-shrink: 0;
+}
+.logo-img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  mix-blend-mode: screen;
+  padding: 3px;
 }
 
 .logo-text {
